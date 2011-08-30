@@ -21,13 +21,15 @@ libpympost.a: main.o
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-test: test.c main.o
-	gcc -o test.o -c test.c
-	g++ -o test test.o -lpthread main.o ../MPOST_Linux/Debug/libMPOST_Linux.a
+test: test.o main.o
+	g++ -o test test.o -lpthread main.o $(LIBS)
+
+testso: test.o libpympost.so
+	g++ -o testso test.o -lpthread -L. -lpympost
 
 # Other Targets
 clean:
-	-$(RM) main.o libpympost.so libpympost.a test test.o
+	-$(RM) main.o libpympost.so libpympost.a test testso test.o
 	-@echo ' '
 
 TAGS:
