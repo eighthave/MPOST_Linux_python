@@ -1,7 +1,7 @@
 
 CXXFLAGS = 
 LDFLAGS =
-LIBS = 
+LIBS =  ../MPOST_Linux/Debug/libMPOST_Linux.a
 
 # All Target
 all: libpympost.so
