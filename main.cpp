@@ -7,10 +7,13 @@
 
 #include "../MPOST_Linux/Acceptor.h"
 
+#include "mpost_int.h"
 
 using namespace std;
 using namespace MPOST;
 
+
+eventcallback eventcallbacks[28];
 
 CAcceptor* g_acceptor = new CAcceptor;
 
@@ -18,11 +21,15 @@ CAcceptor* g_acceptor = new CAcceptor;
 void ConnectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Connected" << endl;
+    if (eventcallbacks[ConnectedEvent])
+        eventcallbacks[ConnectedEvent](value, "");
 }
 
 void DisconnectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Disconnected" << endl;
+    if (eventcallbacks[DisconnectedEvent])
+        eventcallbacks[DisconnectedEvent](value, "");
 }
 
 void EscrowEventHandler(CAcceptor* g_acceptor, int value)
@@ -32,6 +39,8 @@ void EscrowEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: Escrow: Doc Type: " <<  CAcceptor::DocumentTypeToString(g_acceptor->GetDocType()) << " " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
+    if (eventcallbacks[EscrowEvent])
+        eventcallbacks[EscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void PUPEscrowEventHandler(CAcceptor* g_acceptor, int value)
@@ -41,6 +50,8 @@ void PUPEscrowEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: PUPEscrow: " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
+    if (eventcallbacks[PUPEscrowEvent])
+        eventcallbacks[PUPEscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void StackedEventHandler(CAcceptor* g_acceptor, int value)
@@ -50,21 +61,29 @@ void StackedEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: Stacked: Doc Type: " <<  CAcceptor::DocumentTypeToString(g_acceptor->GetDocType()) << " " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
+    if (eventcallbacks[StackedEvent])
+        eventcallbacks[StackedEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void ReturnedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Returned." << endl;
+    if (eventcallbacks[ReturnedEvent])
+        eventcallbacks[ReturnedEvent](value, "");
 }
 
 void RejectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Rejected." << endl;
+    if (eventcallbacks[RejectedEvent])
+        eventcallbacks[RejectedEvent](value, "");
 }
 
 void CheatedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Cheated." << endl;
+    if (eventcallbacks[CheatedEvent])
+        eventcallbacks[CheatedEvent](value, "");
 }
 
 void StackerFullEventHandler(CAcceptor* g_acceptor, int value)
@@ -154,6 +173,31 @@ extern "C" {
 
     void mpost_debug(int enable) {
         g_acceptor->SetDebugLog(enable);
+    }
+
+    void mpost_setcallback(Event event, eventcallback callback) {
+        eventcallbacks[event] = callback;
+    }
+
+    /* setup C++ callbacks */
+	void mpost_setup()
+	{
+        g_acceptor->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
+        g_acceptor->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
+        g_acceptor->SetEventHandler(EscrowEvent, EscrowEventHandler);
+        g_acceptor->SetEventHandler(PUPEscrowEvent, PUPEscrowEventHandler);
+        g_acceptor->SetEventHandler(StackedEvent, StackedEventHandler);
+        g_acceptor->SetEventHandler(ReturnedEvent, ReturnedEventHandler);
+        g_acceptor->SetEventHandler(RejectedEvent, RejectedEventHandler);
+        g_acceptor->SetEventHandler(CheatedEvent, CheatedEventHandler);
+        g_acceptor->SetEventHandler(StackerFullEvent, StackerFullEventHandler);
+        g_acceptor->SetEventHandler(CalibrateStartEvent, CalibrateStartEventHandler);
+        g_acceptor->SetEventHandler(CalibrateProgressEvent, CalibrateProgressEventHandler);
+        g_acceptor->SetEventHandler(CalibrateFinishEvent, CalibrateFinishEventHandler);
+        g_acceptor->SetEventHandler(DownloadStartEvent, DownloadStartEventHandler);
+        g_acceptor->SetEventHandler(DownloadRestartEvent, DownloadRestartEventHandler);
+        g_acceptor->SetEventHandler(DownloadProgressEvent, DownloadProgressEventHandler);
+        g_acceptor->SetEventHandler(DownloadFinishEvent, DownloadFinishEventHandler);
     }
 
 }

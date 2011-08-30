@@ -4,7 +4,13 @@
 
 #include "mpost.h"
 
+void testcallback(int value, const char *str) {
+    printf("received EscrowEvent %d %s\n", value, str);
+}
+
 int main() {
+    mpost_setup();
+    mpost_setcallback(EscrowEvent, testcallback);
     mpost_open("/dev/ttyUSB0");
     printf("accept bills true");
     mpost_acceptbills(1);

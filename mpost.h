@@ -1,5 +1,7 @@
 
-void(*eventcallbacks[28])(int);
+/* this is the header for C programs (not C++) */
+
+#include "mpost_int.h"
 
 enum State
 {
@@ -54,7 +56,7 @@ enum Event
 	DisconnectedEvent,
 	Events_End
 };
-       
+
 void mpost_open(char *portname);
 void mpost_close();
 /* return the bill that is currently sitting in escrow */
@@ -64,3 +66,4 @@ void mpost_stack();
 void mpost_softreset();
 void mpost_acceptbills(int enable);
 void mpost_debug(int enable);
+void mpost_setcallback(enum Event event, eventcallback callback);
