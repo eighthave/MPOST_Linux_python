@@ -21,7 +21,7 @@ libpympost.a: main.o
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-test: libpympost.a test.c
+test: test.c main.o
 	gcc -o test.o -c test.c
 	g++ -o test test.o -lpthread main.o ../MPOST_Linux/Debug/libMPOST_Linux.a
 
