@@ -182,6 +182,9 @@ extern "C" {
     /* setup C++ callbacks */
 	void mpost_setup()
 	{
+
+        for (int i = Events_Begin; i < Events_End; i++)
+            eventcallbacks[i] = 0;
         g_acceptor->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
         g_acceptor->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
         g_acceptor->SetEventHandler(EscrowEvent, EscrowEventHandler);
