@@ -71,6 +71,8 @@ def stackerfull(value, datastr):
     callbacktest(value, datastr)
 stackerfullcallback = CALLBACK(stackerfull)
 
+# not all events are implemented...
+
 #------------------------------------------------------------------------------#
 # for testing from the command line:
 def main(argv):
@@ -78,6 +80,7 @@ def main(argv):
     mpost = CDLL('./libpympost.so')
 
     mpost.mpost_setup()
+    mpost.mpost_autostack(1)
     mpost.mpost_setcallback(ConnectedEvent, connectedcallback)
     mpost.mpost_setcallback(DisconnectedEvent, disconnectedcallback)
     mpost.mpost_setcallback(EscrowEvent, escrowcallback)

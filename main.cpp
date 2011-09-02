@@ -89,6 +89,8 @@ void CheatedEventHandler(CAcceptor* g_acceptor, int value)
 void StackerFullEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Stacker Full." << endl;
+    if (eventcallbacks[StackerFullEvent])
+        eventcallbacks[StackerFullEvent](value, "");
 }
 
 void CalibrateStartEventHandler(CAcceptor* g_acceptor, int value)
