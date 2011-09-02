@@ -1,13 +1,18 @@
 
 CXXFLAGS = 
 LDFLAGS =
-LIBS =  ../MPOST_Linux/Debug/libMPOST_Linux.a
+LIBS = $(libMPOST)
+
+libMPOST = ../MPOST_Linux/Debug/libMPOST_Linux.a
 
 # All Target
 all: libpympost.so
 
+$(libMPOST): ../MPOST_Linux/*.h ../MPOST_Linux/*.cpp
+	make -C ../MPOST_Linux/Debug clean all
+
 # Tool invocations
-libpympost.so: main.o
+libpympost.so: main.o $(LIBS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
 	$(CXX) -rdynamic -shared -fPIC -o $@ main.o $(LIBS)
