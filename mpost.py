@@ -4,99 +4,121 @@ import time
 import sys
 from ctypes import *
 
-(Events_Begin,
- ConnectedEvent,
- EscrowEvent,
- PUPEscrowEvent,
- StackedEvent,
- ReturnedEvent,
- RejectedEvent,
- CheatedEvent,
- StackerFullEvent,
- CalibrateStartEvent,
- CalibrateProgressEvent,
- CalibrateFinishEvent,
- DownloadStartEvent,
- DownloadRestartEvent,
- DownloadProgressEvent,
- DownloadFinishEvent,
- PauseDetectedEvent,
- PauseClearedEvent,
- StallDetectedEvent,
- StallClearedEvent,
- JamDetectedEvent,
- JamClearedEvent,
- PowerUpEvent,
- InvalidCommandEvent,
- CashBoxAttachedEvent,
- CashBoxRemovedEvent,
- DisconnectedEvent,
- Events_End) = map(c_int, xrange(28))
+class MPOST():
+    '''
+    class for receiving info from an MEI Bill Acceptor following the MEI Point
+    of Service Toolkit (MPOST)
+    '''
 
-# ------------------------------------------------------------------------
-# event callbacks
+    # all available event types
+    (Events_Begin,
+     ConnectedEvent,
+     EscrowEvent,
+     PUPEscrowEvent,
+     StackedEvent,
+     ReturnedEvent,
+     RejectedEvent,
+     CheatedEvent,
+     StackerFullEvent,
+     CalibrateStartEvent,
+     CalibrateProgressEvent,
+     CalibrateFinishEvent,
+     DownloadStartEvent,
+     DownloadRestartEvent,
+     DownloadProgressEvent,
+     DownloadFinishEvent,
+     PauseDetectedEvent,
+     PauseClearedEvent,
+     StallDetectedEvent,
+     StallClearedEvent,
+     JamDetectedEvent,
+     JamClearedEvent,
+     PowerUpEvent,
+     InvalidCommandEvent,
+     CashBoxAttachedEvent,
+     CashBoxRemovedEvent,
+     DisconnectedEvent,
+     Events_End) = map(c_int, xrange(28))
 
-CALLBACK = CFUNCTYPE(None, c_int, c_char_p)
+    CALLBACK = CFUNCTYPE(None, c_int, c_char_p)
 
-def callbacktest(value, datastr):
-    print('received callback: ' + str(value) + ' ' + datastr)
+    def __init__(self):
+        cdll.LoadLibrary('./libpympost.so')
+        self.clib = CDLL('./libpympost.so')
+        self.clib.mpost_setup()
 
-def connected(value, datastr):
-    print('connected: ' + datastr)
-    callbacktest(value, datastr)
-connectedcallback = CALLBACK(connected)
+    def open(self, tty='/dev/ttyUSB0'):
+        '''open the connection to the device'''
+        self.clib.mpost_open(tty)
 
-def disconnected(value, datastr):
-    print('disconnected: ' + datastr)
-    callbacktest(value, datastr)
-disconnectedcallback = CALLBACK(disconnected)
+    def close(self):
+        '''close the connection to the device'''
+        self.clib.mpost_close()
 
-def escrow(value, datastr):
-    print('escrow: ' + datastr)
-    callbacktest(value, datastr)
-escrowcallback = CALLBACK(escrow)
+    def returnbill(self):
+        '''return the bill currently sitting in escrow'''
+        self.clib.mpost_return()
 
-def stacked(value, datastr):
-    print('stacked: ' + datastr)
-    callbacktest(value, datastr)
-stackedcallback = CALLBACK(stacked)
+    def acceptbills(self, boolean):
+        '''set whether the acceptor will take bills or not'''
+        self.clib.mpost_acceptbills(boolean)
 
-def returned(value, datastr):
-    print('returned: ' + datastr)
-    callbacktest(value, datastr)
-returnedcallback = CALLBACK(returned)
+    def autostack(self, boolean):
+        '''set whether the acceptor should automatically stack the bills and
+        skip the escrow'''
+        self.clib.mpost_autostack(boolean)
 
-def stackerfull(value, datastr):
-    print('stackerfull: ' + datastr)
-    callbacktest(value, datastr)
-stackerfullcallback = CALLBACK(stackerfull)
+    def setcallback(self, event, callback):
+        '''attach a callback function to an event type.  The callback function
+        should have two parameters: a int value and a string for data'''
+        self.clib.mpost_setcallback(event, callback)
 
-# not all events are implemented...
 
 #------------------------------------------------------------------------------#
 # for testing from the command line:
 def main(argv):
-    cdll.LoadLibrary('./libpympost.so')
-    mpost = CDLL('./libpympost.so')
+    mpost = MPOST()
+    mpost.open('/dev/ttyUSB0')
 
-    mpost.mpost_setup()
-    mpost.mpost_autostack(1)
-    mpost.mpost_setcallback(ConnectedEvent, connectedcallback)
-    mpost.mpost_setcallback(DisconnectedEvent, disconnectedcallback)
-    mpost.mpost_setcallback(EscrowEvent, escrowcallback)
-    mpost.mpost_setcallback(StackedEvent, stackedcallback)
-    mpost.mpost_setcallback(ReturnedEvent, returnedcallback)
-    mpost.mpost_setcallback(StackerFullEvent, stackerfullcallback)
+    connectedcallback = MPOST.CALLBACK(connected)
+    disconnectedcallback = MPOST.CALLBACK(disconnected)
+    escrowcallback = MPOST.CALLBACK(escrow)
+    stackedcallback = MPOST.CALLBACK(stacked)
+    returnedcallback = MPOST.CALLBACK(returned)
+    stackerfullcallback = MPOST.CALLBACK(stackerfull)
 
-    mpost.mpost_open('/dev/ttyUSB0')
-    mpost.mpost_acceptbills(1)
-    print("accept bills true")
+    mpost.setcallback(MPOST.ConnectedEvent, connectedcallback)
+    mpost.setcallback(MPOST.DisconnectedEvent, disconnectedcallback)
+    mpost.setcallback(MPOST.EscrowEvent, escrowcallback)
+    mpost.setcallback(MPOST.StackedEvent, stackedcallback)
+    mpost.setcallback(MPOST.ReturnedEvent, returnedcallback)
+    mpost.setcallback(MPOST.StackerFullEvent, stackerfullcallback)
+
+    mpost.acceptbills(True)
     time.sleep(10)
-    mpost.mpost_return()
+    mpost.returnbill()
     time.sleep(2)
-    mpost.mpost_close()
+    mpost.close()
     
 if __name__ == "__main__":
+
+    # event callbacks, not all events are implemented...
+    def connected(value, datastr):
+        print('connected: ' + datastr)
+
+    def disconnected(value, datastr):
+        print('disconnected: ' + datastr)
+
+    def escrow(value, datastr):
+        print('escrow: ' + datastr)
+
+    def stacked(value, datastr):
+        print('stacked: ' + datastr)
+
+    def returned(value, datastr):
+        print('returned: ' + datastr)
+
+    def stackerfull(value, datastr):
+        print('stackerfull: ' + datastr)
+
     main(sys.argv[1:])
-
-
