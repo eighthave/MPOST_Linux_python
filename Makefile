@@ -1,5 +1,5 @@
 
-CXXFLAGS = 
+CXXFLAGS = -I/usr/include/python2.6 -I../MPOST_Linux/
 LDFLAGS =
 LIBS = $(libMPOST)
 
@@ -25,6 +25,9 @@ libpympost.a: main.o
 	ar -r "libpympost.a" main.o
 	@echo 'Finished building target: $@'
 	@echo ' '
+
+CAcceptor.so: CAcceptor.o
+	$(CXX) -rdynamic -shared -fPIC -o $@ CAcceptor.o $(LIBS) -lboost_python
 
 test: test.o main.o
 	g++ -o test test.o -lpthread main.o $(LIBS)
