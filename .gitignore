@@ -1,7 +1,7 @@
 TAGS
+*.o
 libpympost.a
 libpympost.so
-main.o
+mpostmodule.so
 test
-test.o
 testso
