@@ -6,7 +6,7 @@ LIBS = $(libMPOST)
 libMPOST = ../MPOST_Linux/Debug/libMPOST_Linux.a
 
 # All Target
-all: libpympost.so
+all: mpostmodule.so
 
 $(libMPOST): ../MPOST_Linux/*.h ../MPOST_Linux/*.cpp
 	make -C ../MPOST_Linux/Debug clean all
@@ -26,7 +26,7 @@ libpympost.a: main.o
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-CAcceptor.so: CAcceptor.o
+mpostmodule.so: CAcceptor.o
 	$(CXX) -rdynamic -shared -fPIC -o $@ CAcceptor.o $(LIBS) -lboost_python
 
 test: test.o main.o
