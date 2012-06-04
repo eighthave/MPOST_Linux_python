@@ -13,23 +13,50 @@ using namespace std;
 using namespace MPOST;
 
 
-eventcallback eventcallbacks[28];
+/* -------------------------------------------------------------------------- */
 
-CAcceptor* g_acceptor = new CAcceptor;
+#define MAX_INSTANCES 16
 
+class WrappedAcceptor
+{
+public:
+    eventcallback eventcallbacks[28];
+    CAcceptor* cAcceptor;
+
+	WrappedAcceptor()
+	{
+        cAcceptor = new CAcceptor;
+	}
+
+private:
+};
+
+WrappedAcceptor* acceptors[MAX_INSTANCES];
+
+WrappedAcceptor* findWA(CAcceptor* g_acceptor)
+{
+    for (int i = 0; i < MAX_INSTANCES; i++)
+        if(acceptors[i]->cAcceptor == g_acceptor)
+            return acceptors[i];
+    return NULL;
+}
+
+/* -------------------------------------------------------------------------- */
 
 void ConnectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Connected" << endl;
-    if (eventcallbacks[ConnectedEvent])
-        eventcallbacks[ConnectedEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[ConnectedEvent])
+        wa->eventcallbacks[ConnectedEvent](value, "");
 }
 
 void DisconnectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Disconnected" << endl;
-    if (eventcallbacks[DisconnectedEvent])
-        eventcallbacks[DisconnectedEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[DisconnectedEvent])
+        wa->eventcallbacks[DisconnectedEvent](value, "");
 }
 
 void EscrowEventHandler(CAcceptor* g_acceptor, int value)
@@ -39,8 +66,9 @@ void EscrowEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: Escrow: Doc Type: " <<  CAcceptor::DocumentTypeToString(g_acceptor->GetDocType()) << " " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
-    if (eventcallbacks[EscrowEvent])
-        eventcallbacks[EscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[EscrowEvent])
+        wa->eventcallbacks[EscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void PUPEscrowEventHandler(CAcceptor* g_acceptor, int value)
@@ -50,8 +78,9 @@ void PUPEscrowEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: PUPEscrow: " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
-    if (eventcallbacks[PUPEscrowEvent])
-        eventcallbacks[PUPEscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[PUPEscrowEvent])
+        wa->eventcallbacks[PUPEscrowEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void StackedEventHandler(CAcceptor* g_acceptor, int value)
@@ -61,36 +90,41 @@ void StackedEventHandler(CAcceptor* g_acceptor, int value)
 	ss << "EVENT: Stacked: Doc Type: " <<  CAcceptor::DocumentTypeToString(g_acceptor->GetDocType()) << " " << g_acceptor->GetBill().ToString() << endl;
 	
 	cout << ss.str().c_str();
-    if (eventcallbacks[StackedEvent])
-        eventcallbacks[StackedEvent](value, g_acceptor->GetBill().ToString().c_str());
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[StackedEvent])
+        wa->eventcallbacks[StackedEvent](value, g_acceptor->GetBill().ToString().c_str());
 }
 
 void ReturnedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Returned." << endl;
-    if (eventcallbacks[ReturnedEvent])
-        eventcallbacks[ReturnedEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[ReturnedEvent])
+        wa->eventcallbacks[ReturnedEvent](value, "");
 }
 
 void RejectedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Rejected." << endl;
-    if (eventcallbacks[RejectedEvent])
-        eventcallbacks[RejectedEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[RejectedEvent])
+        wa->eventcallbacks[RejectedEvent](value, "");
 }
 
 void CheatedEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Cheated." << endl;
-    if (eventcallbacks[CheatedEvent])
-        eventcallbacks[CheatedEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[CheatedEvent])
+        wa->eventcallbacks[CheatedEvent](value, "");
 }
 
 void StackerFullEventHandler(CAcceptor* g_acceptor, int value)
 {
 	cout << "EVENT: Stacker Full." << endl;
-    if (eventcallbacks[StackerFullEvent])
-        eventcallbacks[StackerFullEvent](value, "");
+    WrappedAcceptor* wa = findWA(g_acceptor);
+    if (wa && wa->eventcallbacks[StackerFullEvent])
+        wa->eventcallbacks[StackerFullEvent](value, "");
 }
 
 void CalibrateStartEventHandler(CAcceptor* g_acceptor, int value)
@@ -139,70 +173,74 @@ void DownloadFinishEventHandler(CAcceptor* g_acceptor, int value)
 
 extern "C" {
         
-    void mpost_open(char *portname) {
-        g_acceptor->Open(portname, A);
+    void mpost_open(int instance, char *portname) {
+        acceptors[instance]->cAcceptor->Open(portname, A);
     }
 
-    void mpost_close() {
-        g_acceptor->Close();
+    void mpost_close(int instance) {
+        acceptors[instance]->cAcceptor->Close();
     }    
 
 /* return the bill that is currently sitting in escrow */
-    void mpost_return() {
-        g_acceptor->EscrowReturn();
+    void mpost_return(int instance) {
+        acceptors[instance]->cAcceptor->EscrowReturn();
     }
 
 /* stack the bill that is currently sitting in escrow */
-    void mpost_stack() {
-        g_acceptor->EscrowStack();
+    void mpost_stack(int instance) {
+        acceptors[instance]->cAcceptor->EscrowStack();
     }
 
-    void mpost_acceptbills(int enable) {
-        g_acceptor->SetEnableAcceptance(enable);
+    void mpost_acceptbills(int instance, int enable) {
+        acceptors[instance]->cAcceptor->SetEnableAcceptance(enable);
     }
 
-    void mpost_autostack(int enable) {
-        g_acceptor->SetAutoStack(enable);
+    void mpost_autostack(int instance, int enable) {
+        acceptors[instance]->cAcceptor->SetAutoStack(enable);
     }
 
-    void mpost_highsecurity(int enable) {
-        g_acceptor->SetHighSecurity(enable);
+    void mpost_highsecurity(int instance, int enable) {
+        acceptors[instance]->cAcceptor->SetHighSecurity(enable);
     }
 
-    void mpost_softreset() {
-        g_acceptor->SoftReset();
+    void mpost_softreset(int instance) {
+        acceptors[instance]->cAcceptor->SoftReset();
     }
 
-    void mpost_debug(int enable) {
-        g_acceptor->SetDebugLog(enable);
+    void mpost_debug(int instance, int enable) {
+        acceptors[instance]->cAcceptor->SetDebugLog(enable);
     }
-
-    void mpost_setcallback(Event event, eventcallback callback) {
-        eventcallbacks[event] = callback;
+    
+    void mpost_setcallback(int instance, Event event, eventcallback callback) {
+        acceptors[instance]->eventcallbacks[event] = callback;
     }
-
+    
     /* setup C++ callbacks */
-	void mpost_setup()
+	void mpost_setup(int instance)
 	{
-
+        cout << "mpost_setup" << endl;
+        WrappedAcceptor* wa = new WrappedAcceptor;
+        CAcceptor* ca = wa->cAcceptor;
         for (int i = Events_Begin; i < Events_End; i++)
-            eventcallbacks[i] = 0;
-        g_acceptor->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
-        g_acceptor->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
-        g_acceptor->SetEventHandler(EscrowEvent, EscrowEventHandler);
-        g_acceptor->SetEventHandler(PUPEscrowEvent, PUPEscrowEventHandler);
-        g_acceptor->SetEventHandler(StackedEvent, StackedEventHandler);
-        g_acceptor->SetEventHandler(ReturnedEvent, ReturnedEventHandler);
-        g_acceptor->SetEventHandler(RejectedEvent, RejectedEventHandler);
-        g_acceptor->SetEventHandler(CheatedEvent, CheatedEventHandler);
-        g_acceptor->SetEventHandler(StackerFullEvent, StackerFullEventHandler);
-        g_acceptor->SetEventHandler(CalibrateStartEvent, CalibrateStartEventHandler);
-        g_acceptor->SetEventHandler(CalibrateProgressEvent, CalibrateProgressEventHandler);
-        g_acceptor->SetEventHandler(CalibrateFinishEvent, CalibrateFinishEventHandler);
-        g_acceptor->SetEventHandler(DownloadStartEvent, DownloadStartEventHandler);
-        g_acceptor->SetEventHandler(DownloadRestartEvent, DownloadRestartEventHandler);
-        g_acceptor->SetEventHandler(DownloadProgressEvent, DownloadProgressEventHandler);
-        g_acceptor->SetEventHandler(DownloadFinishEvent, DownloadFinishEventHandler);
+            wa->eventcallbacks[i] = 0;
+        ca->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
+        ca->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
+        ca->SetEventHandler(EscrowEvent, EscrowEventHandler);
+        ca->SetEventHandler(PUPEscrowEvent, PUPEscrowEventHandler);
+        ca->SetEventHandler(StackedEvent, StackedEventHandler);
+        ca->SetEventHandler(ReturnedEvent, ReturnedEventHandler);
+        ca->SetEventHandler(RejectedEvent, RejectedEventHandler);
+        ca->SetEventHandler(CheatedEvent, CheatedEventHandler);
+        ca->SetEventHandler(StackerFullEvent, StackerFullEventHandler);
+        ca->SetEventHandler(CalibrateStartEvent, CalibrateStartEventHandler);
+        ca->SetEventHandler(CalibrateProgressEvent, CalibrateProgressEventHandler);
+        ca->SetEventHandler(CalibrateFinishEvent, CalibrateFinishEventHandler);
+        ca->SetEventHandler(DownloadStartEvent, DownloadStartEventHandler);
+        ca->SetEventHandler(DownloadRestartEvent, DownloadRestartEventHandler);
+        ca->SetEventHandler(DownloadProgressEvent, DownloadProgressEventHandler);
+        ca->SetEventHandler(DownloadFinishEvent, DownloadFinishEventHandler);
+        acceptors[instance] = wa;
+        cout << "mpost_setup END" << endl;
     }
 
 }
@@ -210,22 +248,24 @@ extern "C" {
 /*
   int main(int argc, char *argv[])
   {
-  g_acceptor->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
-  g_acceptor->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
-  g_acceptor->SetEventHandler(EscrowEvent, EscrowEventHandler);
-  g_acceptor->SetEventHandler(PUPEscrowEvent, PUPEscrowEventHandler);
-  g_acceptor->SetEventHandler(StackedEvent, StackedEventHandler);
-  g_acceptor->SetEventHandler(ReturnedEvent, ReturnedEventHandler);
-  g_acceptor->SetEventHandler(RejectedEvent, RejectedEventHandler);
-  g_acceptor->SetEventHandler(CheatedEvent, CheatedEventHandler);
-  g_acceptor->SetEventHandler(StackerFullEvent, StackerFullEventHandler);
-  g_acceptor->SetEventHandler(CalibrateStartEvent, CalibrateStartEventHandler);
-  g_acceptor->SetEventHandler(CalibrateProgressEvent, CalibrateProgressEventHandler);
-  g_acceptor->SetEventHandler(CalibrateFinishEvent, CalibrateFinishEventHandler);
-  g_acceptor->SetEventHandler(DownloadStartEvent, DownloadStartEventHandler);
-  g_acceptor->SetEventHandler(DownloadRestartEvent, DownloadRestartEventHandler);
-  g_acceptor->SetEventHandler(DownloadProgressEvent, DownloadProgressEventHandler);
-  g_acceptor->SetEventHandler(DownloadFinishEvent, DownloadFinishEventHandler);
+  WrappedAcceptor* wa = acceptors[instance];
+  CAcceptor* ca = wa->cAcceptor;
+  ca->SetEventHandler(ConnectedEvent, ConnectedEventHandler);
+  ca->SetEventHandler(DisconnectedEvent, DisconnectedEventHandler);
+  ca->SetEventHandler(EscrowEvent, EscrowEventHandler);
+  ca->SetEventHandler(PUPEscrowEvent, PUPEscrowEventHandler);
+  ca->SetEventHandler(StackedEvent, StackedEventHandler);
+  ca->SetEventHandler(ReturnedEvent, ReturnedEventHandler);
+  ca->SetEventHandler(RejectedEvent, RejectedEventHandler);
+  ca->SetEventHandler(CheatedEvent, CheatedEventHandler);
+  ca->SetEventHandler(StackerFullEvent, StackerFullEventHandler);
+  ca->SetEventHandler(CalibrateStartEvent, CalibrateStartEventHandler);
+  ca->SetEventHandler(CalibrateProgressEvent, CalibrateProgressEventHandler);
+  ca->SetEventHandler(CalibrateFinishEvent, CalibrateFinishEventHandler);
+  ca->SetEventHandler(DownloadStartEvent, DownloadStartEventHandler);
+  ca->SetEventHandler(DownloadRestartEvent, DownloadRestartEventHandler);
+  ca->SetEventHandler(DownloadProgressEvent, DownloadProgressEventHandler);
+  ca->SetEventHandler(DownloadFinishEvent, DownloadFinishEventHandler);
 
   string s;
     
@@ -234,42 +274,42 @@ extern "C" {
   cin >> s;
         
   if (s == "o")
-  g_acceptor->Open("/dev/ttyUSB0", A);
+  acceptors[instance]->cAcceptor->Open("/dev/ttyUSB0", A);
         
   if (s == "c")
-  g_acceptor->Close();
+  acceptors[instance]->cAcceptor->Close();
         
   // Exit
   if (s == "x")
   break;
         
   if (s == "r")
-  g_acceptor->EscrowReturn();
+  acceptors[instance]->cAcceptor->EscrowReturn();
         
   if (s == "s")
-  g_acceptor->EscrowStack();    
+  acceptors[instance]->cAcceptor->EscrowStack();    
         
   if (s == "res")
-  g_acceptor->SoftReset();    
+  acceptors[instance]->cAcceptor->SoftReset();    
         
   // Hard-code the appropriate filename here (or add code to read a filename).
   if (s == "f")
-  g_acceptor->FlashDownload("/root/workspace/MPOST/284us281.bds");//490021211_SC83_JPY_FLASH.BIN");
+  acceptors[instance]->cAcceptor->FlashDownload("/root/workspace/MPOST/284us281.bds");//490021211_SC83_JPY_FLASH.BIN");
         
   // Device Information
   if (s == "i")
   {
-  cout << "     Device Type: " <<(g_acceptor->GetCapDeviceType() ? g_acceptor->GetDeviceType() : "Not supported") << endl;
-  cout << "       Device CRC: " << g_acceptor->GetDeviceCRC() << endl;
-  cout << "        Serial #: " <<(g_acceptor->GetCapDeviceSerialNumber() ? g_acceptor->GetDeviceSerialNumber() : "Not supported") << endl;
-  cout << "     Boot Part #: " <<(g_acceptor->GetCapBootPN() ? g_acceptor->GetBootPN() : "Not supported") << endl;
-  cout << "  Application PN: " <<(g_acceptor->GetCapApplicationPN() ? g_acceptor->GetApplicationPN() : "Not supported") << endl;
-  if (g_acceptor->GetCapVariantPN())
+  cout << "     Device Type: " <<(acceptors[instance]->cAcceptor->GetCapDeviceType() ? acceptors[instance]->cAcceptor->GetDeviceType() : "Not supported") << endl;
+  cout << "       Device CRC: " << acceptors[instance]->cAcceptor->GetDeviceCRC() << endl;
+  cout << "        Serial #: " <<(acceptors[instance]->cAcceptor->GetCapDeviceSerialNumber() ? acceptors[instance]->cAcceptor->GetDeviceSerialNumber() : "Not supported") << endl;
+  cout << "     Boot Part #: " <<(acceptors[instance]->cAcceptor->GetCapBootPN() ? acceptors[instance]->cAcceptor->GetBootPN() : "Not supported") << endl;
+  cout << "  Application PN: " <<(acceptors[instance]->cAcceptor->GetCapApplicationPN() ? acceptors[instance]->cAcceptor->GetApplicationPN() : "Not supported") << endl;
+  if (acceptors[instance]->cAcceptor->GetCapVariantPN())
   {
-  cout << "       Variant PN: " << g_acceptor->GetVariantPN() << endl;
+  cout << "       Variant PN: " << acceptors[instance]->cAcceptor->GetVariantPN() << endl;
   cout << "    Variant Name: " << endl;
 	        	
-  vector<string> names = g_acceptor->GetVariantNames();
+  vector<string> names = acceptors[instance]->cAcceptor->GetVariantNames();
 	        	
   for(vector<string>::iterator i = names.begin(); i != names.end(); i++)
   cout << *i << " ";
@@ -282,31 +322,31 @@ extern "C" {
   cout << "    Variant Name: Not supported" << endl;
   }
         	
-  cout << "        Cassette: " <<(g_acceptor->GetCashBoxAttached() ? "Installed" : "Not installed") << endl;
+  cout << "        Cassette: " <<(acceptors[instance]->cAcceptor->GetCashBoxAttached() ? "Installed" : "Not installed") << endl;
   cout << "Cash in Cassette: ";
-  if (g_acceptor->GetCapCashBoxTotal())
-  cout << g_acceptor->GetCashBoxTotal() << endl;
+  if (acceptors[instance]->cAcceptor->GetCapCashBoxTotal())
+  cout << acceptors[instance]->cAcceptor->GetCashBoxTotal() << endl;
   else
   cout << "Not supported" << endl;
         	
-  cout << "           Resets: " << g_acceptor->GetDeviceResets() << endl;
-  cout << "        Bill Path: " <<(g_acceptor->GetDeviceJammed() ? "Jammed" : "Clear") << endl;
-  cout << "            Model: " << g_acceptor->GetDeviceModel();
+  cout << "           Resets: " << acceptors[instance]->cAcceptor->GetDeviceResets() << endl;
+  cout << "        Bill Path: " <<(acceptors[instance]->cAcceptor->GetDeviceJammed() ? "Jammed" : "Clear") << endl;
+  cout << "            Model: " << acceptors[instance]->cAcceptor->GetDeviceModel();
         	
-  if (g_acceptor->GetDeviceModel() >= 32)
-  cout << "(" <<(char)g_acceptor->GetDeviceModel() << ")" << endl;
+  if (acceptors[instance]->cAcceptor->GetDeviceModel() >= 32)
+  cout << "(" <<(char)acceptors[instance]->cAcceptor->GetDeviceModel() << ")" << endl;
   else
   cout << endl;
         
   cout << "        BNFStatus: ";
-  if (g_acceptor->GetCapBNFStatus())
-  cout << g_acceptor->GetBNFStatus() << endl;
+  if (acceptors[instance]->cAcceptor->GetCapBNFStatus())
+  cout << acceptors[instance]->cAcceptor->GetBNFStatus() << endl;
   else
   cout << "Not supported" << endl;
         	
-  if (g_acceptor->GetCapAudit())
+  if (acceptors[instance]->cAcceptor->GetCapAudit())
   {
-  vector<int> values = g_acceptor->GetAuditLifeTimeTotals();
+  vector<int> values = acceptors[instance]->cAcceptor->GetAuditLifeTimeTotals();
   cout << "             Data Map: " << values[0] << endl;
   cout << "       Total Op Hours: " << values[1] << endl;
   cout << "    Total Mot Starts: " << values[2] << endl;
@@ -314,7 +354,7 @@ extern "C" {
   cout << "    Total Recognized: " << values[4] << endl;
   cout << "     Total Validated: " << values[5] << endl;
 
-  values = g_acceptor->GetAuditQP();
+  values = acceptors[instance]->cAcceptor->GetAuditQP();
   cout << "             Last 100: " << values[0] << endl;
   cout << "        Motor Starts: " << values[1] << endl;
   cout << "        Docs Stacked: " << values[2] << endl;
@@ -330,7 +370,7 @@ extern "C" {
   cout << "    Docs Host Reject: " << values[12] << endl;
   cout << "        Docs Barcode: " << values[13] << endl;
 
-  values = g_acceptor->GetAuditPerformance();
+  values = acceptors[instance]->cAcceptor->GetAuditPerformance();
   cout << "           CC0 Reject: " << values[0] << endl;
   cout << "           CC1 Reject: " << values[1] << endl;
   cout << "            All James: " << values[2] << endl;
